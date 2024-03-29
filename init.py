@@ -27,11 +27,15 @@ import UI
 import save_load_manager
 import handle_errors
 import cleanUp
+import ExportSettings
+import utils
 
 importlib.reload(UI)
 importlib.reload(save_load_manager)
 importlib.reload(handle_errors)
 importlib.reload(cleanUp)
+importlib.reload(ExportSettings)
+importlib.reload(utils)
 
 
 
@@ -41,45 +45,21 @@ importlib.reload(cleanUp)
       #Get all hierarchy objects#
 """"""""""""""""""""""""""""""""""""""""""
 
-def getObjList(list):
-    for obj in list:
-        children = mc.listRelatives(obj, typ = 'transform')
-        if children != None:
-            for node in children:
-                if node not in list:
-                    list.append(node)
-
-# """"""""""""""""""""""""""""""""""""""""""
-#        #Import Reference File#
-# """"""""""""""""""""""""""""""""""""""""""
-
-# def importRefFile():
-#     refs = mc.ls(type = 'reference')
-#     for i in refs:
-#         if mc.objExists(i):
-#             rFile = mc.referenceQuery(i, f = True)
-#             mc.file(rFile, importReference = True)
-        
-        
-# """"""""""""""""""""""""""""""""""""""""""
-#       #Delete All Namespaces#
-# """"""""""""""""""""""""""""""""""""""""""        
-
-# def nameSpaceChange():
-#     allNodes = mc.ls()
-#     allNameSpaces = []
+def getObjList(obj_list):
+    # Initialize a separate list to store all children found
+    all_children = []
     
-#     for obj in allNodes:
-#         if ':' in obj:
-#             if obj.split(':')[0] not in allNameSpaces:
-#                 allNameSpaces.append(obj.split(':')[0])
-#     if allNameSpaces != []:    
-#         for curNameSpace in allNameSpaces:
-#             if mc.namespace(exists = curNameSpace):
-#                 mc.namespace(rm = curNameSpace, mnr = True)
-#                 nameSpaceChange()
-#             else:
-#                 nameSpaceChange()
+    # Traverse the original list and look for children
+    for obj in obj_list:
+        children = mc.listRelatives(obj, typ='transform')
+        if children is not None:
+            # Extend the all_children list with new children, avoiding duplicates
+            all_children.extend(child for child in children if child not in obj_list and child not in all_children)
+
+    # Append all unique children to the original list
+    obj_list.extend(all_children)
+
+
 
 """"""""""""""""""""""""""""""""""""""""""
       #Get all bones to be Keyed#
@@ -474,8 +454,11 @@ def exportProcess():
         
     #get bones to bake and bake them
     bakeBoneList = getKeyBones(side)
-
+    
     print('boneList: ', bakeBoneList)
+    if any('BdBn_R_Wrist_01' in bone for bone in bakeBoneList):
+        print('found it')
+    
     
     if mc.radioButtonGrp('exportType', sl = True, q = True) == 1 or mc.radioButtonGrp('exportType', sl = True, q = True) == 3:
         bakeAnimBones(bakeBoneList)
@@ -512,7 +495,7 @@ def exportProcess():
         symbol = '_'
     else:
         symbol = '@'
-        
+    print('about to export')
     filePath = mc.textField('exportLocationText', q=True, tx=True)
     clipType = mc.textField('clipTypeText', q=True, tx=True)
     clipName = mc.textField('clipNameText', q=True, tx=True)
